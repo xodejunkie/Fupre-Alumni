@@ -1,3 +1,68 @@
+<?php 
+  session_start();
+  // include 'db.php';
+  if(isset($_GET['r'])){
+  $r = $_GET['r'];}
+
+  if (isset($_POST['submit'])) {
+    $con = new mysqli("localhost", "root", "", "alumni");
+
+
+    $filename = $_FILES['passport']['name'];
+    $filetmpname = $_FILES['passport']['tmp_name'];
+    // Folder to Move the Image
+    $folder = 'img/';
+    // Function for saving the uploaded images in a specific folder
+    move_uploaded_file($filetmpname, $folder.$filename);
+
+    // The Details to be captured
+    $fullname = $con->real_escape_string($_POST['name']);
+    $matric = $con->real_escape_string($_POST['mat-num']);
+    $phone = $con->real_escape_string($_POST['phone']);
+    $mail = $con->real_escape_string($_POST['email']);
+    $sets = $con->real_escape_string($_POST['set']);
+    $school = $con->real_escape_string($_POST['school']);
+    $department = $con->real_escape_string($_POST['department']);
+    $lga = $con->real_escape_string($_POST['lga']);
+    $position = $con->real_escape_string($_POST['portfolio']);
+    $vision = $con->real_escape_string($_POST['vision']);
+
+    if(empty($fullname) || empty($matric) || empty($mail) || empty($phone)) {
+    header("Location: declaration?r=All fields are required, please try again.'");
+    exit();
+  }
+  if (!filter_var($email, FILTER_VALIDATE_EMAIL)){
+    header("Location: declaration?r=The email you entered is invalid, please try again.'");
+    exit();
+  }else{
+        //validate the uniqueness of email
+        $checkemail = $con->query("SELECT email FROM aspirant WHERE email = '$mail'");
+        $numrows = mysqli_num_rows($checkemail);
+        if($numrows > 0){
+        header("Location: declaration?r=The Email is already in use!");
+        exit();
+      }
+      // prepare and bind and execute for user table
+      $stmt = $con->prepare("INSERT INTO aspirant (fullname, matric, phone, mail, sets, school, department, lga, position, vision, passport) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)");
+      $stmt->bind_param("ssssssssssss", $fullname, $matric, $phone, $mail, $sets, $school, $department, $lga, $position, $vision, $passport);
+
+
+      if($stmt->execute()){
+        $msg = "Form Submission Successful!";
+        header("Location: congratulation");
+        }else{
+        header("Location: declaration?r=Registration Failed, Please Try Again or Contact Support!");
+        exit();
+        }
+      }
+      $stmt->close();
+      $con->close();
+
+
+  }
+
+ ?>
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -23,13 +88,13 @@
       <div class="overlay"></div>
       <div class="form-container declaration-form-container">
         <h1 class="form-title">DECLARATION OF INTEREST FORM</h1>
-        <form action="">
+        <form action="declaration" method="post" enctype="multipart/form-data">
           <div class="input-container">
             <div class="input-content-container">
               <input type="text" placeholder="Enter Full Name..." name="name" />
             </div>
             <div class="input-content-container">
-              <input type="text" placeholder="Matriculation No..." name="name" />
+              <input type="text" placeholder="Matriculation No..." name="mat-num" />
             </div>
           </div>
           <div class="input-container">
@@ -84,7 +149,7 @@
 
           <div class="select-container">
             <label for="">What local government are you from?</label><br>
-                    <select class="select" name="local government area" id="department">
+                    <select class="select" name="lga" id="department">
                         <option>Select your local government area</option>
                         <option>Ajeromi Ifelodun</option>
                         <option>Alimosho</option>
@@ -104,7 +169,7 @@
                </div>
           <div class="select-container">
             <label for="">What position are you aspiring for?</label><br>
-                    <select class="select" name="local government area" id="department">
+                    <select class="select" name="portfolio" id="department">
                         <option>Select position </option>
                         <option>Executive Chairman</option>
                         <option>Vice Chairman, Ikeja Division</option>
@@ -140,7 +205,7 @@
                <div class="select-container">
                 <label for="">Upload a clear picture of yourself showing your face!</label><br>
                 <div class="file-upload-container">
-                  <input class="file-upload" type="file" name="Passport" id="file" />
+                  <input class="file" type="file" name="passport" id="file-upload" />
                 </div>
               </div>
 
